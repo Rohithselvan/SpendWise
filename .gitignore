@@ -1,0 +1,16 @@
+node_modules
+dist
+dev-dist
+coverage
+*.log
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.local
+.env
+.env.*
+# Never commit personal backups or exports
+spendwise-backup-*.json
+spendwise-*.csv
