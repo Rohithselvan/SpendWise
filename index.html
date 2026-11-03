@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en-IN" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f1211" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="description" content="SpendWise — private, offline personal expense tracker. Your data stays on your device." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SpendWise" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="icon" type="image/svg+xml" href="./icons/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <title>SpendWise</title>
+    <!-- boot-guard:start -->
+    <script>
+/*
+ * SpendWise boot guard — inline here so even a mis-deployed copy of the source explains itself.
+ * If the app's own files fail to load, it shows which file failed and the likely fix,
+ * instead of leaving a blank screen. Stripped from `npm run dev` by vite.config.ts.
+ * The app sets window.__spendwiseBooted when it renders; the message is then removed.
+ */
+(function () {
+  var shown = false;
+  var failedUrl = null;
+
+  function hint(url) {
+    if (!url) return 'The app is taking too long to start. Check your connection and reload.';
+    if (url.indexOf('/src/') !== -1 || /\.tsx?(\?|$)/.test(url))
+      return 'This site is serving the project source code instead of the built app. On GitHub: Settings → Pages → Source must be “GitHub Actions”, and the latest run in the Actions tab must be green.';
+    if (url.indexOf('/assets/') !== -1)
+      return 'Some app files are missing from the server. Redeploy the full contents of the dist folder (or re-run the GitHub Actions deploy).';
+    return 'A required file could not be downloaded. Reload, or redeploy the app.';
+  }
+
+  function render() {
+    if (shown || window.__spendwiseBooted) return;
+    var root = document.getElementById('root');
+    if (root && root.childNodes.length) return;
+    shown = true;
+    var box = document.createElement('div');
+    box.id = 'boot-error';
+    box.setAttribute('role', 'alert');
+    box.style.cssText = 'font-family:system-ui,-apple-system,sans-serif;max-width:440px;margin:15vh auto 0;padding:0 24px;color:#ecf0ee;line-height:1.5';
+    var h = document.createElement('h1');
+    h.textContent = 'SpendWise could not start';
+    h.style.cssText = 'font-size:20px;margin:0 0 8px';
+    var p1 = document.createElement('p');
+    p1.textContent = hint(failedUrl);
+    p1.style.cssText = 'color:#a0aba6;margin:0 0 12px';
+    box.appendChild(h);
+    box.appendChild(p1);
+    if (failedUrl) {
+      var p2 = document.createElement('p');
+      p2.textContent = 'Could not load: ' + failedUrl;
+      p2.style.cssText = 'color:#7a8580;margin:0 0 16px;font-size:13px;word-break:break-all';
+      box.appendChild(p2);
+    }
+    var p3 = document.createElement('p');
+    p3.textContent = 'Your saved data is not affected.';
+    p3.style.cssText = 'color:#7a8580;margin:0 0 16px;font-size:13px';
+    box.appendChild(p3);
+    var btn = document.createElement('button');
+    btn.textContent = 'Reload';
+    btn.onclick = function () { location.reload(); };
+    btn.style.cssText = 'height:44px;padding:0 20px;border:0;border-radius:12px;background:#2fd08a;color:#04140c;font-weight:600;font-size:15px';
+    box.appendChild(btn);
+    document.body.style.background = '#0f1211';
+    document.body.appendChild(box);
+  }
+
+  function fail(url) {
+    if (url && !failedUrl) failedUrl = url;
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render);
+    else render();
+  }
+
+  window.addEventListener('error', function (e) {
+    var t = e.target;
+    if (!t || !t.tagName) return;
+    // Only the app's own code and styles matter; icons or images failing should not block startup.
+    if (t.tagName === 'SCRIPT') fail(t.src);
+    else if (t.tagName === 'LINK' && /stylesheet|modulepreload/.test(t.rel)) fail(t.href);
+  }, true);
+
+  // Slow networks: only complain if nothing has rendered after 25 seconds.
+  setTimeout(function () { fail(null); }, 25000);
+})();
+    </script>
+    <!-- boot-guard:end -->
+    <script>
+      // Apply saved theme before first paint to avoid a flash.
+      try {
+        var t = localStorage.getItem('spendwise-theme') || 'dark';
+        var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>SpendWise needs JavaScript enabled.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

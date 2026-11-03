@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * SpendWise tokens
+ *  ink-*   graphite surfaces with a faint green bias so emerald sits in the same family
+ *  fg-*    text levels (all ≥ 4.5:1 on their surfaces, subtle ≥ 3:1 for non-essential text)
+ */
+@layer base {
+  :root {
+    --ink-950: 244 246 245;
+    --ink-900: 255 255 255;
+    --ink-850: 248 250 249;
+    --ink-800: 238 242 240;
+    --ink-700: 222 229 226;
+    --ink-600: 196 205 201;
+    --fg: 17 24 22;
+    --fg-muted: 76 88 83;
+    --fg-subtle: 104 116 110;
+    --line: 220 227 224;
+    --accent-fg: 13 128 81;
+    color-scheme: light;
+  }
+  .dark {
+    --ink-950: 13 16 15;
+    --ink-900: 21 25 24;
+    --ink-850: 25 30 29;
+    --ink-800: 31 37 36;
+    --ink-700: 41 48 46;
+    --ink-600: 58 67 64;
+    --fg: 236 240 238;
+    --fg-muted: 160 171 166;
+    --fg-subtle: 122 133 128;
+    --line: 39 46 44;
+    --accent-fg: 70 218 153;
+    color-scheme: dark;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-ink-950 text-fg font-sans antialiased;
+    font-feature-settings: 'ss01' on, 'cv11' on;
+    overscroll-behavior-y: none;
+    min-height: 100dvh;
+  }
+  :focus-visible {
+    outline: 2px solid #2fd08a;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  button, [role='button'] { touch-action: manipulation; }
+  input[type='date']::-webkit-calendar-picker-indicator { filter: invert(var(--date-invert, 0)); opacity: .7; }
+  .dark input[type='date'] { --date-invert: 1; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+  }
+}
+
+@layer utilities {
+  .num { font-variant-numeric: tabular-nums lining-nums; letter-spacing: -0.01em; }
+  .text-accent { color: rgb(var(--accent-fg)); }
+  .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .pl-safe { padding-left: env(safe-area-inset-left, 0px); }
+  .pr-safe { padding-right: env(safe-area-inset-right, 0px); }
+  .mb-nav { margin-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  .scrollbar-none { scrollbar-width: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+}
+
+/* Recharts: keep focus rings tidy */
+.recharts-wrapper:focus, .recharts-surface:focus { outline: none; }
