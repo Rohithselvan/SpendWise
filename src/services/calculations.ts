@@ -256,8 +256,13 @@ export function trackedDays(range: DateRange, ctx: SeriesContext): number {
 
 /** Average daily personal spending over tracked, elapsed days (rounded paise). Null if no tracked days. */
 export function averageDaily(totalPaise: number, days: number): number | null {
-  if (days <= 0) return null;
-  return Math.round(totalPaise / days);
+  return averageOf(totalPaise, days);
+}
+
+/** Rounded integer-paise average of a total over `n` items. Null when there is nothing to average (never NaN/Infinity). */
+export function averageOf(totalPaise: number, n: number): number | null {
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.round(totalPaise / n);
 }
 
 export function inRange(txs: readonly Transaction[], r: DateRange): Transaction[] {

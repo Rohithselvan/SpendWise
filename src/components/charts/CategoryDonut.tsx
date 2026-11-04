@@ -10,9 +10,13 @@ interface Props {
   total: number;
   onSelect?: (categoryId: string) => void;
   limit?: number;
+  /** Also show how many transactions fall in each category. */
+  showCount?: boolean;
+  /** Label in the centre of the donut. */
+  centerLabel?: string;
 }
 
-export function CategoryDonut({ rows, categories, total, onSelect, limit }: Props) {
+export function CategoryDonut({ rows, categories, total, onSelect, limit, showCount = false, centerLabel = 'Spent' }: Props) {
   const shown = limit ? rows.slice(0, limit) : rows;
   const data = rows.map((r) => ({ name: categories.get(r.key)?.name ?? 'Unknown', value: r.totalPaise, color: categories.get(r.key)?.color ?? '#94a3b8', key: r.key }));
   return (
@@ -29,7 +33,7 @@ export function CategoryDonut({ rows, categories, total, onSelect, limit }: Prop
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
           <div>
-            <p className="text-xs text-fg-muted">Spent</p>
+            <p className="text-xs text-fg-muted">{centerLabel}</p>
             <p className="num text-lg font-bold">{formatINR(total, { decimals: 'never' })}</p>
           </div>
         </div>
@@ -49,7 +53,10 @@ export function CategoryDonut({ rows, categories, total, onSelect, limit }: Prop
                 </span>
                 <span className="text-right">
                   <span className="num block text-sm font-bold">{formatINR(r.totalPaise)}</span>
-                  <span className="num block text-xs text-fg-subtle">{r.percent}%</span>
+                  <span className="num block text-xs text-fg-subtle">
+                    {showCount && `${r.count} ${r.count === 1 ? 'txn' : 'txns'} · `}
+                    {r.percent}%
+                  </span>
                 </span>
               </button>
             </li>

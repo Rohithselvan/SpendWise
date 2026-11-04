@@ -2,7 +2,7 @@ import { CategoryIcon } from '@/components/ui/category-icon';
 import { TX_COLOR, TX_SIGN } from '@/components/ui/tx-style';
 import { formatINR } from '@/lib/money';
 import { PAYMENT_METHOD_LABEL, TX_TYPE_LABEL, type Category, type Transaction } from '@/types';
-import { formatFriendlyDate } from '@/lib/dates';
+import { formatFriendlyDate, formatRecordedTime } from '@/lib/dates';
 
 export function transactionTitle(t: Transaction, cat?: Category): string {
   if (t.description) return t.description;
@@ -10,12 +10,28 @@ export function transactionTitle(t: Transaction, cat?: Category): string {
   return cat?.name ?? TX_TYPE_LABEL[t.type];
 }
 
-export function TransactionRow({ tx, category, onSelect, showDate = false, today }: { tx: Transaction; category?: Category; onSelect: (t: Transaction) => void; showDate?: boolean; today?: string }) {
+export function TransactionRow({
+  tx,
+  category,
+  onSelect,
+  showDate = false,
+  showTime = false,
+  today,
+}: {
+  tx: Transaction;
+  category?: Category;
+  onSelect: (t: Transaction) => void;
+  showDate?: boolean;
+  /** Show when the record was saved (Asia/Kolkata), e.g. in the Daily Report. */
+  showTime?: boolean;
+  today?: string;
+}) {
   const color = TX_COLOR[tx.type];
   const sub = [
     tx.type === 'transfer' ? `To ${category?.name ?? 'Unknown'}${tx.recipient ? ` (${tx.recipient})` : ''}` : category?.name ?? 'Unknown category',
     PAYMENT_METHOD_LABEL[tx.paymentMethod],
     showDate ? formatFriendlyDate(tx.date, today) : null,
+    showTime ? formatRecordedTime(tx.createdAt, tx.date) : null,
   ]
     .filter(Boolean)
     .join(', ');

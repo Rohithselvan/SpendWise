@@ -127,6 +127,29 @@ export function formatMonthLabel(key: string): string {
   return format(parseISODate(`${key}-01`), 'MMMM yyyy');
 }
 
+/** "Wed, 04 Nov 2026" — used as the Daily Report heading. */
+export function formatLongDay(s: ISODate): string {
+  if (!isValidISODate(s)) return s;
+  return format(parseISODate(s), 'EEE, dd MMM yyyy');
+}
+
+/**
+ * When a record was saved, as an Asia/Kolkata clock time ("2:45 pm").
+ * If it was saved on a different day than its transaction date (e.g. back-dated), the save date is included.
+ * Returns null for a missing or unreadable timestamp.
+ */
+export function formatRecordedTime(isoTimestamp: string | undefined, txDate?: ISODate): string | null {
+  if (!isoTimestamp) return null;
+  const at = new Date(isoTimestamp);
+  if (Number.isNaN(at.getTime())) return null;
+  const time = new Intl.DateTimeFormat('en-IN', { timeZone: APP_TIMEZONE, hour: 'numeric', minute: '2-digit', hour12: true })
+    .format(at)
+    .toLowerCase();
+  const savedOn = todayIST(at);
+  if (!txDate || savedOn === txDate) return time;
+  return `${format(parseISODate(savedOn), 'd MMM')}, ${time}`;
+}
+
 export function formatShortDay(s: ISODate): string {
   return format(parseISODate(s), 'd MMM');
 }

@@ -25,3 +25,21 @@ describe('dates', () => {
     expect(formatDisplayDate('2026-11-03', 'YYYY-MM-DD')).toBe('2026-11-03');
   });
 });
+
+describe('daily report date labels', () => {
+  it('formats the long day heading', async () => {
+    const { formatLongDay } = await import('./dates');
+    expect(formatLongDay('2026-11-04')).toBe('Wed, 04 Nov 2026');
+  });
+  it('formats the recorded time in Asia/Kolkata', async () => {
+    const { formatRecordedTime } = await import('./dates');
+    // 09:15Z = 2:45 pm IST
+    expect(formatRecordedTime('2026-11-04T09:15:00.000Z', '2026-11-04')).toBe('2:45 pm');
+    // 20:00Z on 3 Nov is already 4 Nov in IST
+    expect(formatRecordedTime('2026-11-03T20:00:00.000Z', '2026-11-04')).toBe('1:30 am');
+    // back-dated entry saved the next day shows the save date
+    expect(formatRecordedTime('2026-11-04T09:15:00.000Z', '2026-11-03')).toBe('4 Nov, 2:45 pm');
+    expect(formatRecordedTime(undefined)).toBeNull();
+    expect(formatRecordedTime('not a date')).toBeNull();
+  });
+});

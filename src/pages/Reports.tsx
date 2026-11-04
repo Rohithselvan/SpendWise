@@ -13,6 +13,8 @@ import { PaymentMethodBars } from '@/components/charts/PaymentMethodBars';
 import { SpendTrendChart, TrendLegend, hasTrackedData } from '@/components/charts/SpendTrendChart';
 import { ComparisonTable } from '@/components/reports/ComparisonTable';
 import { TypeSummary } from '@/components/reports/TypeSummary';
+import { DailyReport } from '@/components/reports/DailyReport';
+import { MonthSwitcher } from '@/components/layout/MonthSwitcher';
 import { TransactionRow, transactionTitle } from '@/components/transactions/TransactionRow';
 import { TransactionDetailSheet } from '@/components/transactions/TransactionDetailSheet';
 import { useAllTransactions, useCategoryMap, useSettings, useTrackingStart } from '@/hooks/useData';
@@ -20,14 +22,15 @@ import { useToday } from '@/hooks/useToday';
 import { buildPeriodReport } from '@/services/reports';
 import type { PeriodKind } from '@/services/calculations';
 import { transactionsToCsv } from '@/services/csv';
-import { formatDisplayDate, formatMonthLabel, isValidISODate, monthKey, monthRange, monthRangeFromKey, shiftMonthKey, yearRange } from '@/lib/dates';
+import { formatDisplayDate, formatLongDay, formatMonthLabel, isValidISODate, monthKey, monthRange, monthRangeFromKey, yearRange } from '@/lib/dates';
 import { formatINR } from '@/lib/money';
 import { saveFileLocally } from '@/lib/storage';
 import { transactionsLink } from '@/lib/links';
 import { friendlyError } from '@/lib/utils';
 import type { DateRange, Transaction } from '@/types';
 
-type Preset = 'this-month' | 'last-month' | 'year' | 'custom';
+/** Report views. Daily is the default when Reports opens. */
+export type ReportView = 'daily' | 'month' | 'year' | 'custom';
 
 export default function Reports() {
   const today = useToday();
@@ -37,24 +40,29 @@ export default function Reports() {
   const { dateFormat } = useSettings();
   const navigate = useNavigate();
   const toast = useToast();
-  const [preset, setPreset] = React.useState<Preset>('this-month');
+  const [view, setView] = React.useState<ReportView>('daily');
+  // null = follow today (rolls over at midnight IST); otherwise a specific past date the user picked.
+  const [pickedDay, setPickedDay] = React.useState<string | null>(null);
+  const day = pickedDay !== null && pickedDay < today ? pickedDay : today;
+  const setDay = React.useCallback((d: string) => setPickedDay(d >= today ? null : d), [today]);
+  const [month, setMonth] = React.useState(() => monthKey(today));
   const [year, setYear] = React.useState(Number(today.slice(0, 4)));
   const [custom, setCustom] = React.useState<DateRange>(() => ({ start: monthRange(today).start, end: today }));
   const [selected, setSelected] = React.useState<Transaction | null>(null);
 
   const customValid = isValidISODate(custom.start) && isValidISODate(custom.end) && custom.start <= custom.end;
   const { range, kind, title } = React.useMemo((): { range: DateRange; kind: PeriodKind; title: string } => {
-    const cur = monthKey(today);
-    if (preset === 'last-month') {
-      const k = shiftMonthKey(cur, -1);
-      return { range: monthRangeFromKey(k), kind: 'month', title: formatMonthLabel(k) };
-    }
-    if (preset === 'year') return { range: yearRange(year), kind: 'year', title: String(year) };
-    if (preset === 'custom' && customValid) return { range: custom, kind: 'custom', title: `${formatDisplayDate(custom.start, dateFormat)} – ${formatDisplayDate(custom.end, dateFormat)}` };
-    return { range: monthRangeFromKey(cur), kind: 'month', title: formatMonthLabel(cur) };
-  }, [preset, today, year, custom, customValid, dateFormat]);
+    if (view === 'year') return { range: yearRange(year), kind: 'year', title: String(year) };
+    if (view === 'custom' && customValid) return { range: custom, kind: 'custom', title: `${formatDisplayDate(custom.start, dateFormat)} – ${formatDisplayDate(custom.end, dateFormat)}` };
+    const k = view === 'month' ? month : monthKey(today);
+    return { range: monthRangeFromKey(k), kind: 'month', title: formatMonthLabel(k) };
+  }, [view, month, today, year, custom, customValid, dateFormat]);
 
-  const report = React.useMemo(() => (all && trackingStart !== undefined ? buildPeriodReport(all, range, kind, { today, trackingStart }) : null), [all, range, kind, today, trackingStart]);
+  // The daily view builds its own (much smaller) report; skip the period report while it is shown.
+  const report = React.useMemo(
+    () => (view !== 'daily' && all && trackingStart !== undefined ? buildPeriodReport(all, range, kind, { today, trackingStart }) : null),
+    [view, all, range, kind, today, trackingStart],
+  );
 
   const firstYear = trackingStart ? Number(trackingStart.slice(0, 4)) : Number(today.slice(0, 4));
   const years: number[] = [];
@@ -75,20 +83,25 @@ export default function Reports() {
 
   return (
     <>
-      <PageHeader title="Reports" subtitle={title} />
+      <PageHeader title="Reports" subtitle={view === 'daily' ? `Daily report · ${formatLongDay(day)}` : title} />
       <div className="space-y-3">
-        <Segmented<Preset>
-          label="Report period"
-          value={preset}
-          onChange={setPreset}
+        <Segmented<ReportView>
+          label="Report view"
+          value={view}
+          onChange={setView}
           options={[
-            { value: 'this-month', label: 'This month' },
-            { value: 'last-month', label: 'Last month' },
-            { value: 'year', label: 'Year' },
+            { value: 'daily', label: 'Daily' },
+            { value: 'month', label: 'Monthly' },
+            { value: 'year', label: 'Yearly' },
             { value: 'custom', label: 'Custom' },
           ]}
         />
-        {preset === 'year' && (
+        {view === 'month' && (
+          <div className="flex">
+            <MonthSwitcher value={month} onChange={setMonth} maxKey={monthKey(today)} />
+          </div>
+        )}
+        {view === 'year' && (
           <div className="max-w-[200px]">
             <Label htmlFor="year">Year</Label>
             <Select id="year" value={year} onChange={(e) => setYear(Number(e.target.value))}>
@@ -100,7 +113,7 @@ export default function Reports() {
             </Select>
           </div>
         )}
-        {preset === 'custom' && (
+        {view === 'custom' && (
           <div className="grid max-w-[460px] grid-cols-2 gap-3">
             <div>
               <Label htmlFor="r-from">From</Label>
@@ -115,7 +128,15 @@ export default function Reports() {
         )}
       </div>
 
-      {!report ? (
+      {view === 'daily' ? (
+        <section className="mt-4" aria-label="Daily report">
+          {all && trackingStart !== undefined ? (
+            <DailyReport date={day} onDateChange={setDay} today={today} allTxs={all} trackingStart={trackingStart} categories={categories} dateFormat={dateFormat} onSelectTx={setSelected} />
+          ) : (
+            <div className="h-64 animate-pulse rounded-2xl bg-ink-900" aria-busy="true" aria-label="Loading" />
+          )}
+        </section>
+      ) : !report ? (
         <div className="mt-4 h-64 animate-pulse rounded-2xl bg-ink-900" aria-busy="true" aria-label="Loading" />
       ) : report.currentCoverage === 'none' ? (
         <Card className="mt-4">
